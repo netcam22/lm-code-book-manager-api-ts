@@ -39,7 +39,8 @@ export const deleteBook = async (req: Request, res: Response) => {
 	const bookId = req.params.bookId;
 	try {
 		const deleted = await bookService.deleteBook(Number(bookId));
-		res.status(204).json(deleted);
+		const status = deleted === 0 ? 404 : 200;
+		res.status(status).json(deleted);
 	} catch (error) {
 		res.status(400).json({ message: (error as Error).message });
 	}

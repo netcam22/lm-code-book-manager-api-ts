@@ -1,7 +1,6 @@
 import request from "supertest";
 import { app } from "../app";
 import { Book } from "../models/book";
-
 import * as bookService from "../services/books";
 jest.mock("../services/books");
 
@@ -144,42 +143,33 @@ describe("POST /api/v1/books endpoint", () => {
 describe("DELETE api/v1/books endpoint", () => {
 	test("book successfully deleted when an id is passed in", async () => {
 		//Arrange
-		const mockDeleteBook = jest.spyOn(bookService, "deleteBook");
+		jest.spyOn(bookService, "deleteBook").mockResolvedValue(1);
 		// Act
 		const res = await request(app).delete("/api/v1/books/4");
 		// Assert
-		expect(res.statusCode).toEqual(204);
+		expect(res.statusCode).toEqual(200);
+		expect(res.body).toEqual(1);
 	});
-	test("status code successfully 204 for a book that is not found", async () => {
+
+	test("status code 400 when trying to delete ill formatted JSON", async () => {
+		// Arrange - we can enforce throwing an exception by mocking the implementation
+		jest.spyOn(bookService, "deleteBook").mockImplementation(() => {
+			throw new Error("SQLITE_ERROR: no such column: NaN");
+		});
+
+		// Act
+		const res = await request(app).delete("/api/v1/books/x");
+		// Assert
+		expect(res.statusCode).toEqual(400);
+	});
+
+	test("status code returns 404 for a book that is not found", async () => {
 		// Arrange
-		jest.spyOn(bookService, "deleteBook");
+		jest.spyOn(bookService, "deleteBook").mockResolvedValue(0);
 		// Act
 		const res = await request(app).delete("/api/v1/books/7");
 		// Assert
-		expect(res.statusCode).toEqual(204);
-	});
-
-	test("status code 400 when trying to delete ill formatted JSON", async () => {
-		// Arrange - we can enforce throwing an exception by mocking the implementation
-		jest.spyOn(bookService, "deleteBook").mockImplementation(() => {
-			throw new Error("SQLITE_ERROR: no such column: NaN");
-		});
-
-		// Act
-		const res = await request(app).delete("/api/v1/books/x");
-		// Assert
-		expect(res.statusCode).toEqual(400);
-	});
-
-	test("status code 400 when trying to delete ill formatted JSON", async () => {
-		// Arrange - we can enforce throwing an exception by mocking the implementation
-		jest.spyOn(bookService, "deleteBook").mockImplementation(() => {
-			throw new Error("SQLITE_ERROR: no such column: NaN");
-		});
-
-		// Act
-		const res = await request(app).delete("/api/v1/books/x");
-		// Assert
-		expect(res.statusCode).toEqual(400);
+		expect(res.statusCode).toEqual(404);
+		expect(res.body).toEqual(0);
 	});
 });
